@@ -25,7 +25,7 @@ function increaseTime(target){
       web3.currentProvider.send({
         jsonrpc: '2.0',
         method: 'evm_mine',
-        id: id+1,
+        id: id+1
       }, (err2, res) => {
         return err2 ? reject(err2) : resolve(res)
       })
@@ -39,6 +39,7 @@ function increaseTimeTo(target){
 	  let diff = target - now;
 	  return increaseTime(diff);
 }
+
 // How transferFrom works:
 // You send tokens _to a contract from the tokens the _owner allowed _you to use
 contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
@@ -62,7 +63,8 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 		})
 	})
 
-	it.only("the updateState() function should work based on timestamp",()=>{
+
+	it("the updateState() function should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
 			increaseTimeTo(this.presaleStartTime)
 			await crowdsale.updateState()
@@ -89,9 +91,9 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-		it.only('should accept payments after start',() => {
+		it('should accept payments after start',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.presaleStartTime)
+				increaseTimeTo(this.presaleStartTime)
 				try{
 					await crowdsale.buyPresaleTokens()
 				}catch(e){
@@ -103,7 +105,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should reject after end',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.presaleEndTime)
+			    increaseTimeTo(this.presaleEndTime)
 				try{
 					await crowdsale.buyPresaleTokens()
 				}catch(e){
@@ -127,7 +129,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should accept payments after ico start time',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.ICOStartTime)
+				increaseTimeTo(this.ICOStartTime)
 				try{
 					await crowdsale.buyICOtokens()
 				}catch(e){
@@ -139,7 +141,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should reject after ICO end',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.ICOEndTime)
+			    increaseTimeTo(this.ICOEndTime)
 				try{
 					await crowdsale.buyICOtokens()
 				}catch(e){
