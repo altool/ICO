@@ -14,7 +14,7 @@ function days(numberOfDays) {
 function increaseTime(target){
   const id = Date.now()
   return new Promise((resolve, reject) => {
-    web3.currentProvider.sendAsync({
+    web3.currentProvider.send({
       jsonrpc: '2.0',
       method: 'evm_increaseTime',
       params: [target],
@@ -22,7 +22,7 @@ function increaseTime(target){
     }, err1 => {
       if (err1) return reject(err1)
 
-      web3.currentProvider.sendAsync({
+      web3.currentProvider.send({
         jsonrpc: '2.0',
         method: 'evm_mine',
         id: id+1,
@@ -64,12 +64,14 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 	it.only("the updateState() function should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
-			const currentState = 'not started'
 			increaseTimeTo(this.presaleStartTime)
 			await crowdsale.updateState()
 			const updatedState = await crowdsale.getStates()
 
-			assert.equal(updatedState, currentState ,"the update state function is wrong")
+         console.log('Updated State:')
+         console.log(updatedState)
+
+			assert.equal(updatedState, 'presale' ,"the update state function is wrong")
          resolve()
 		})
 	})
