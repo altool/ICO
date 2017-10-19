@@ -27,7 +27,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
       crowdsale = await Crowdsale.new(wallet, drops.address, this.presaleStartTime,this.presaleEndTime,this.ICOStartTime,this.ICOEndTime)
    })
 
-   it.only("the get states function return value should match with current state value",()=> {
+   it("the get states function return value should match with current state value",()=> {
 		return new Promise(async (resolve,reject) => {
 			const currentState = await crowdsale.currentState()
 
@@ -39,12 +39,12 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 	it("the update State function should should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
-			const currentState = await crowdsale.states.StatesICO
+			const currentState = await crowdsale.currentState()
 			await crowdsale.updateState()
 
 			assert.equal(States.ICOEnded, currentState ,"the update state function is wrong")
+         resolve()
 		})
-
 	})
 
 	describe('accepting payments',() => {
