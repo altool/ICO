@@ -57,22 +57,20 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
    it("the get states function return value should match with current state value",()=> {
 		return new Promise(async (resolve,reject) => {
-			const currentState = await crowdsale.currentState()
-
 			assert.equal('not started', await crowdsale.getStates()," the get states function is not working properly")
 			resolve()
 		})
-
 	})
 
-	it("the update State function should  work based on timestamp",()=>{
+	it.only("the updateState() function should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
-			const currentState = await crowdsale.currentState()
-			increaseTimeTo(this.ICOStartTime)
+			const currentState = 'not started'
+			increaseTimeTo(this.presaleStartTime)
 			await crowdsale.updateState()
-			const updatedState = await crowdsale.currentState()
+			const updatedState = await crowdsale.getStates()
 
 			assert.equal(updatedState, currentState ,"the update state function is wrong")
+         resolve()
 		})
 	})
 
