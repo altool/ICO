@@ -181,22 +181,22 @@ contract Crowdsale is Pausable {
          return endICO();
 
       if(currentState == States.ICO)
-         if(now > ICOEndTime) {
+         if(now >= ICOEndTime) {
             currentState = States.ICOEnded;
             updateState();
          }
       else if(currentState == States.PresaleEnded)
-         if(now > ICOStartTime) {
+         if(now >= ICOStartTime) {
             currentState = States.ICO;
             updateState();
          }
       else if(currentState == States.Presale)
-         if(now > presaleEndTime) {
+         if(now >= presaleEndTime) {
             currentState = States.PresaleEnded;
             updateState();
          }
       else if(currentState == States.NotStarted)
-         if(now > presaleStartTime) {
+         if(now >= presaleStartTime) {
             currentState = States.Presale;
             updateState();
          }

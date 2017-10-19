@@ -52,7 +52,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
       this.ICOEndTime = this.ICOStartTime + days(7)
 
       drops = await Drops.new(this.ICOEndTime)
-      crowdsale = await Crowdsale.new(wallet, drops.address, this.presaleStartTime,this.presaleEndTime,this.ICOStartTime,this.ICOEndTime)
+      crowdsale = await Crowdsale.new(wallet, drops.address, this.presaleStartTime, this.presaleEndTime, this.ICOStartTime, this.ICOEndTime)
    })
 
    it("the get states function return value should match with current state value",()=> {
