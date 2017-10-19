@@ -14,7 +14,7 @@ function days(numberOfDays) {
 function increaseTime(target){
   const id = Date.now()
   return new Promise((resolve, reject) => {
-    web3.currentProvider.sendAsync({
+    web3.currentProvider.send({
       jsonrpc: '2.0',
       method: 'evm_increaseTime',
       params: [target],
@@ -22,10 +22,10 @@ function increaseTime(target){
     }, err1 => {
       if (err1) return reject(err1)
 
-      web3.currentProvider.sendAsync({
+      web3.currentProvider.send({
         jsonrpc: '2.0',
         method: 'evm_mine',
-        id: id+1,
+        id: id+1
       }, (err2, res) => {
         return err2 ? reject(err2) : resolve(res)
       })
@@ -58,24 +58,22 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
    it("the get states function return value should match with current state value",()=> {
 		return new Promise(async (resolve,reject) => {
-			const currentState = await crowdsale.currentState()
-
 			assert.equal('not started', await crowdsale.getStates()," the get states function is not working properly")
 			resolve()
 		})
-
 	})
 
-	it("the update State function should  work based on timestamp",()=>{
+
+	it("the updateState() function should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
-			const currentState = await crowdsale.currentState()
-			increaseTimeTo(this.ICOStartTime)
+			const currentState = 'not started'
+			increaseTimeTo(this.presaleStartTime)
 			await crowdsale.updateState()
-			const updatedState = await crowdsale.currentState()
+			const updatedState = await crowdsale.getStates()
 
 			assert.equal(updatedState, currentState ,"the update state function is wrong")
+         resolve()
 		})
-
 	})
 
 	describe('accepting payments',() => {
@@ -91,9 +89,9 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-		it.only('should accept payments after start',() => {
+		it('should accept payments after start',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.presaleStartTime)
+				increaseTimeTo(this.presaleStartTime)
 				try{
 					await crowdsale.buyPresaleTokens()
 				}catch(e){
@@ -105,7 +103,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should reject after end',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.presaleEndTime)
+			    increaseTimeTo(this.presaleEndTime)
 				try{
 					await crowdsale.buyPresaleTokens()
 				}catch(e){
@@ -129,7 +127,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should accept payments after ico start time',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.ICOStartTime)
+				increaseTimeTo(this.ICOStartTime)
 				try{
 					await crowdsale.buyICOtokens()
 				}catch(e){
@@ -141,7 +139,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 		it('should reject after ICO end',() => {
 			return new Promise(async (resolve,reject)=>{
-				await increaseTimeTo(this.ICOEndTime)
+			    increaseTimeTo(this.ICOEndTime)
 				try{
 					await crowdsale.buyICOtokens()
 				}catch(e){

@@ -173,19 +173,33 @@ contract Crowdsale is Pausable {
       ICORate = _ICORate;
    }
 
-   /// @notice Updates the States of the Contract depending on the time and States
+   /// @notice Updates the States of the Contract depending on the time and States.
+   /// After updating the state, the code it's execute again in case you jump from 2 states
+   /// or similar
    function updateState() public {
       if(currentState == States.ICOEnded)
          return endICO();
 
       if(currentState == States.ICO)
-         if(now > ICOEndTime) currentState = States.ICOEnded;
+         if(now > ICOEndTime) {
+            currentState = States.ICOEnded;
+            updateState();
+         }
       else if(currentState == States.PresaleEnded)
-         if(now > ICOStartTime) currentState = States.ICO;
+         if(now > ICOStartTime) {
+            currentState = States.ICO;
+            updateState();
+         }
       else if(currentState == States.Presale)
-         if(now > presaleEndTime) currentState = States.PresaleEnded;
+         if(now > presaleEndTime) {
+            currentState = States.PresaleEnded;
+            updateState();
+         }
       else if(currentState == States.NotStarted)
-         if(now > presaleStartTime) currentState = States.Presale;
+         if(now > presaleStartTime) {
+            currentState = States.Presale;
+            updateState();
+         }
    }
 
    /// @notice To extract the balance of the contract after the presale and ICO only
