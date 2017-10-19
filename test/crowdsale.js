@@ -66,12 +66,14 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
 	it("the updateState() function should work based on timestamp",()=>{
 		return new Promise(async (resolve,reject) =>{
-			const currentState = 'not started'
 			increaseTimeTo(this.presaleStartTime)
 			await crowdsale.updateState()
 			const updatedState = await crowdsale.getStates()
 
-			assert.equal(updatedState, currentState ,"the update state function is wrong")
+         console.log('Updated State:')
+         console.log(updatedState)
+
+			assert.equal(updatedState, 'presale' ,"the update state function is wrong")
          resolve()
 		})
 	})
