@@ -250,9 +250,11 @@ contract Drops is PausableToken {
 
    uint256 public ICOEndTime;
 
+   address public crowdsale;
+
    // Only allow token transfers after the ICO
-   modifier afterICO() {
-      require(msg.sender == owner || now >= ICOEndTime);
+   modifier afterICOCrowdsale() {
+      require(msg.sender == owner || msg.sender == crowdsale || now >= ICOEndTime);
       _;
    }
 
@@ -267,28 +269,36 @@ contract Drops is PausableToken {
       ICOEndTime = _ICOEndTime;
    }
 
+   /// @notice To set the address of the crowdsale in order to distribute the tokens
+   /// @param _crowdsale The address of the crowdsale
+   function setCrowdsaleAddress(address _crowdsale) public onlyOwner {
+      require(_crowdsale != address(0));
+
+      crowdsale = _crowdsale;
+   }
+
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function transfer(address _to, uint256 _value) public whenNotPaused afterICO returns(bool) {
+   function transfer(address _to, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
       return super.transfer(_to, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused afterICO returns(bool) {
+   function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
       return super.transferFrom(_from, _to, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function approve(address _spender, uint256 _value) public whenNotPaused afterICO returns(bool) {
+   function approve(address _spender, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
      return super.approve(_spender, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function increaseApproval(address _spender, uint _addedValue) public whenNotPaused afterICO returns(bool success) {
+   function increaseApproval(address _spender, uint _addedValue) public whenNotPaused afterICOCrowdsale returns(bool success) {
      return super.increaseApproval(_spender, _addedValue);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterICO returns(bool success) {
+   function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterICOCrowdsale returns(bool success) {
      return super.decreaseApproval(_spender, _subtractedValue);
    }
 }

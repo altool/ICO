@@ -56,8 +56,7 @@ contract Crowdsale is Pausable {
 
    // Only allow the execution of the function before the ICO starts
    modifier beforeStarting() {
-      require(now < presaleStartTime);
-      require(currentState == States.NotStarted);
+      require(currentState == States.NotStarted || currentState == States.PresaleEnded);
       _;
    }
 
@@ -132,11 +131,12 @@ contract Crowdsale is Pausable {
       require(validPresalePurchase());
 
       uint256 tokens = msg.value.mul(presaleRate);
-
       weiPresaleRaised = weiPresaleRaised.add(msg.value);
       tokensPresaleRaised = tokensPresaleRaised.add(tokens);
-      counterPresaleTransactions = counterPresaleTransactions.add(1);
 
+      require(tokensPresaleRaised <= limitPresaleContribution);
+
+      counterPresaleTransactions = counterPresaleTransactions.add(1);
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
@@ -149,11 +149,12 @@ contract Crowdsale is Pausable {
       require(validICOPurchase());
 
       uint256 tokens = msg.value.mul(ICORate);
-
       weiICORaised = weiICORaised.add(msg.value);
       tokensICORaised = tokensICORaised.add(tokens);
-      counterICOTransactions = counterICOTransactions.add(1);
 
+      require(tokensICORaised <= limitICOContribution);
+
+      counterICOTransactions = counterICOTransactions.add(1);
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
@@ -219,17 +220,15 @@ contract Crowdsale is Pausable {
    function validPresalePurchase() internal constant returns(bool) {
       bool withinTime = now >= presaleStartTime && now < presaleEndTime;
       bool withinLimit = tokensPresaleRaised < limitPresaleContribution;
-      bool nonZeroPurchase = msg.value > 0;
 
-      return withinTime && withinLimit && nonZeroPurchase;
+      return withinTime && withinLimit;
    }
 
    /// @notice To verify that the purchase of ICO tokens is valid
    function validICOPurchase() internal constant returns(bool) {
       bool withinTime = now >= ICOStartTime && now < ICOEndTime;
       bool withinLimit = tokensICORaised < limitICOContribution;
-      bool nonZeroPurchase = msg.value > 0;
 
-      return withinTime && withinLimit && nonZeroPurchase;
+      return withinTime && withinLimit;
    }
 }

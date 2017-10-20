@@ -38,6 +38,17 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 
       drops = await Drops.new(this.ICOEndTime)
       crowdsale = await Crowdsale.new(wallet, drops.address, this.presaleStartTime, this.presaleEndTime, this.ICOStartTime, this.ICOEndTime)
+
+      // You can set the rates whenever you want to use the most convinient rate
+      // at the time of the presale and ICO since the price of ether change constantly
+      await crowdsale.setRates(5000, 2000)
+
+      // You have to set the address of the crowdsale to be able to distribute tokens
+      // by the crowdsale and to block people from transfering them until the end of the ICO
+      await drops.setCrowdsaleAddress(crowdsale.address)
+
+      // Approve the use of 75 + 7.5 million tokens to the crowdsale
+      await drops.approve(crowdsale.address, 82.5e24)
    })
 
    it("the get states function return value should match with current state value",()=> {
@@ -91,7 +102,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
       })
    })
 
-	describe('accepting payments',() => {
+	describe('Payments',() => {
 		it('should reject payments before start',() => {
 			return new Promise(async (resolve,reject) => {
 				try {
@@ -104,27 +115,27 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-		it('should accept payments after start',() => {
+		it.only('should accept payments after starting the presale',() => {
 			return new Promise(async (resolve,reject) => {
 				increaseTimeTo(this.presaleStartTime)
-				// try {
+				try {
 
                // You have to send ether directly, because the buy functions are internal
                // to revert transactions when the ICO is ended
 					await web3.eth.sendTransaction({
-                  from: web3.eth.accounts[0],
+                  from: web3.eth.accounts[1],
                   to: crowdsale.address,
-                  amount: web3.toWei(0.1, 'ether')
+                  amount: web3.toWei(1, 'ether')
                })
-				// } catch(e) {
-				// 	return reject() // this is not the case
-				// }
+				} catch(e) {
+				 	return reject() // this is not the case
+				}
 
 				resolve() // there shouldn't be any exception
 			})
 		})
 
-		it('should reject after end',() => {
+		it('should reject payments after the end of the presale',() => {
 			return new Promise(async (resolve,reject)=>{
 			    increaseTimeTo(this.presaleEndTime)
 				try{
