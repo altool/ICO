@@ -38,8 +38,6 @@ contract Crowdsale is Pausable {
    uint256 public tokensICORaised;
    uint256 public counterPresaleTransactions;
    uint256 public counterICOTransactions;
-   uint256 public minPurchase = 100 finney; // 0.1 ether is the minimum
-   uint256 public maxPurchase = 2000 ether;
 
    // How much each user paid for the presale + ICO
    mapping(address => uint256) public ICOBalances;
@@ -177,40 +175,30 @@ contract Crowdsale is Pausable {
    /// After updating the state, the code it's execute again in case you jump from 2 states
    /// or similar
    function updateState() public {
-      if(currentState == States.ICOEnded)
-         return endICO();
+      if(currentState == States.ICOEnded) return;
 
-      if(currentState == States.ICO)
-         if(now >= ICOEndTime) {
-            currentState = States.ICOEnded;
-            updateState();
-         }
-      else if(currentState == States.PresaleEnded)
-         if(now >= ICOStartTime) {
-            currentState = States.ICO;
-            updateState();
-         }
-      else if(currentState == States.Presale)
-         if(now >= presaleEndTime) {
-            currentState = States.PresaleEnded;
-            updateState();
-         }
-      else if(currentState == States.NotStarted)
-         if(now >= presaleStartTime) {
-            currentState = States.Presale;
-            updateState();
-         }
+      if(currentState == States.ICO && now >= ICOEndTime) {
+         currentState = States.ICOEnded;
+         ICOFinalized();
+         updateState();
+      } else if(currentState == States.PresaleEnded && now >= ICOStartTime) {
+         currentState = States.ICO;
+         ICOStarted();
+         updateState();
+      } else if(currentState == States.Presale && now >= presaleEndTime) {
+         currentState = States.PresaleEnded;
+         PresaleFinalized();
+         updateState();
+      } else if(currentState == States.NotStarted && now >= presaleStartTime) {
+         currentState = States.Presale;
+         PresaleStarted();
+         updateState();
+      }
    }
 
    /// @notice To extract the balance of the contract after the presale and ICO only
    function extractFundsRaised() public onlyOwner afterStarting whenNotPaused {
       wallet.transfer(this.balance);
-   }
-
-   /// @notice When the ICO ends we want to distribute the tokens to each user and
-   /// not before because the tokens should only be tradable after the ICO
-   function endICO() internal {
-
    }
 
    /// @notice To get the current States as a string
@@ -241,9 +229,7 @@ contract Crowdsale is Pausable {
       bool withinTime = now >= ICOStartTime && now < ICOEndTime;
       bool withinLimit = tokensICORaised < limitICOContribution;
       bool nonZeroPurchase = msg.value > 0;
-      bool userLimit = ICOBalances[msg.sender] < maxPurchase;
-      bool combinedBalance = ICOBalances[msg.sender].add(msg.value) <= maxPurchase;
 
-      return withinTime && withinLimit && nonZeroPurchase && userLimit && combinedBalance;
+      return withinTime && withinLimit && nonZeroPurchase;
    }
 }
