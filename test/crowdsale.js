@@ -46,11 +46,6 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
       // You have to set the address of the crowdsale to be able to distribute tokens
       // by the crowdsale and to block people from transfering them until the end of the ICO
       await drops.setCrowdsaleAddress(crowdsale.address)
-
-      // Send the use of 75 + 7.5 million tokens to the crowdsale to distribute them
-      await drops.transfer(crowdsale.address, 82.5e24, {
-         from: web3.eth.accounts[0]
-      })
    })
 
    it("the get states function return value should match with current state value",()=> {
@@ -117,23 +112,11 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-      it.only('should transfer tokens from the crowdsale contract at any moment', () => {
-         return new Promise(async (resolve, reject) => {
-            await drops.transfer(web3.eth.accounts[2], 10e24, {
-               from: crowdsale.address
-            })
-            const finalBalance = await drops.balanceOf(web3.eth.accounts[2])
-
-            assert.equal(finalBalance, 10e24, 'The final balance should be 10 million tokens')
-            resolve()
-         })
-      })
-
       it('should not allow token transfers for users until the end of the ICO', () => {
 
       })
 
-		it.only('should accept payments after starting the presale',() => {
+		it('should accept payments after starting the presale',() => {
 			return new Promise(async (resolve,reject) => {
 				increaseTimeTo(this.presaleStartTime)
 
@@ -143,7 +126,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
                // to revert transactions when the ICO is ended. So it's only possible
                // to execute them from the fallback function
 					await web3.eth.sendTransaction({
-                  from: web3.eth.accounts[1],
+                  from: accounts[1],
                   to: crowdsale.address,
                   amount: web3.toWei(1, 'ether')
                })

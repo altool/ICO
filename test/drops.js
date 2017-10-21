@@ -1,6 +1,6 @@
 const assert = require('assert')
 const Drops = artifacts.require('Drops')
-const totalSupply = 150e24
+const totalSupply = 67.5e24
 const symbol = 'AQUA'
 
 // The token instance
@@ -16,7 +16,7 @@ contract('Drops', accounts => {
       drops = await Drops.new(ICOEndTime)
    })
 
-   it("Should generate the right amount of total supply", () => {
+   it("Should set the total supply to the initial supply", () => {
       return new Promise(async (resolve, reject) => {
          const currentTotalSupply = await drops.totalSupply()
 

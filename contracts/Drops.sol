@@ -246,26 +246,41 @@ contract Drops is PausableToken {
 
    uint8 public constant decimals = 18;
 
-   uint256 public constant totalSupply = 150e24; // 150M tokens with 18 decimals
+   // 150M tokens with 18 decimals maximum
+   uint256 public totalSupply;
+
+   uint256 public initialSupply = 67.5e24;
+
+   // The amount of tokens to distribute on the crowsale 7.5M presale + 75M ICO
+   uint256 public constant crowdsaleTokens = 82.5e24;
 
    uint256 public ICOEndTime;
 
    address public crowdsale;
 
+   uint256 public tokensRaised;
+
    // Only allow token transfers after the ICO
-   modifier afterICOCrowdsale() {
-      require(msg.sender == owner || msg.sender == crowdsale || now >= ICOEndTime);
+   modifier afterCrowdsale() {
+      require(now >= ICOEndTime);
+      _;
+   }
+
+   // Only the crowdsale
+   modifier onlyCrowdsale() {
+      require(msg.sender == crowdsale);
       _;
    }
 
    /// @notice The constructor used to set the initial balance for the founder and development
-   /// the owner of those tokens will distribute the tokens accordingly with allowances
+   /// the owner of those tokens will distribute the tokens for development and platform
    /// @param _ICOEndTime When will the ICO end to allow token transfers after the ICO only,
    /// required parameter
    function Drops(uint256 _ICOEndTime) public {
       require(_ICOEndTime > 0);
 
-      balances[msg.sender] = totalSupply;
+      balances[msg.sender] = initialSupply;
+      totalSupply = initialSupply;
       ICOEndTime = _ICOEndTime;
    }
 
@@ -277,28 +292,42 @@ contract Drops is PausableToken {
       crowdsale = _crowdsale;
    }
 
+   /// @notice To distribute the presale and ICO tokens and increase the total
+   /// supply accordingly. The unsold tokens will be deleted, not generated
+   /// @param _to The user that will receive the tokens
+   /// @param _amount How many tokens he'll receive
+   function distributeTokens(address _to, uint256 _amount) public onlyCrowdsale {
+      require(_to != address(0));
+      require(_amount > 0);
+      require(tokensRaised.add(_amount) <= crowdsaleTokens);
+
+      tokensRaised = tokensRaised.add(_amount);
+      balances[_to] = balances[_to].add(_amount);
+      totalSupply = totalSupply.add(_amount);
+   }
+
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function transfer(address _to, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
+   function transfer(address _to, uint256 _value) public whenNotPaused afterCrowdsale returns(bool) {
       return super.transfer(_to, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
+   function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused afterCrowdsale returns(bool) {
       return super.transferFrom(_from, _to, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function approve(address _spender, uint256 _value) public whenNotPaused afterICOCrowdsale returns(bool) {
+   function approve(address _spender, uint256 _value) public whenNotPaused afterCrowdsale returns(bool) {
      return super.approve(_spender, _value);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function increaseApproval(address _spender, uint _addedValue) public whenNotPaused afterICOCrowdsale returns(bool success) {
+   function increaseApproval(address _spender, uint _addedValue) public whenNotPaused afterCrowdsale returns(bool success) {
      return super.increaseApproval(_spender, _addedValue);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO
-   function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterICOCrowdsale returns(bool success) {
+   function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterCrowdsale returns(bool success) {
      return super.decreaseApproval(_spender, _subtractedValue);
    }
 }
