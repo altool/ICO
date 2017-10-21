@@ -66,6 +66,38 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
       })
    })
 
+   it("the extractFundsRaised() modified should work based on timestamp and only owner and not paused",() => {
+	   	return new Promise(async (resolve, reject) => {
+	   		increaseTimeTo(this.ICOStartTime)
+	   		await crowdsale.updateState()
+	   		await drops.pause()
+	        const isPaused = await drops.paused()
+	        assert.ok(isPaused, "The contract should be pausable by the owner") // this satisfies owner and pausable condition
+
+	   		try{
+	   			await crowdsale.extractFundsRaised()
+	   		}catch(e){
+	   			return resolve()
+	   		}
+	   		reject() // there should be exception
+	   	})
+   })
+
+   it('setRates() function should reject after starting',() =>{
+   		return new Promise(async (resolve, reject) => {
+   			increaseTimeTo(this.ICOStartTime)
+   			await crowdsale.updateState()
+   			try{
+   				await crowdsale.setRates(5000,2000)
+   			}catch(e){
+   				return resolve()
+   			}
+
+   			reject()
+   		})
+   })
+
+
    it("the updateState() function should work based on timestamp to end the presale",()=>{
 		return new Promise(async (resolve,reject) => {
          increaseTimeTo(this.presaleEndTime)
@@ -119,18 +151,19 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 		it('should accept payments after starting the presale',() => {
 			return new Promise(async (resolve,reject) => {
 				increaseTimeTo(this.presaleStartTime)
-
+				await crowdsale.updateState()
 				try {
 
                // You have to send ether directly, because the buy functions are internal
                // to revert transactions when the ICO is ended. So it's only possible
                // to execute them from the fallback function
-					await web3.eth.sendTransaction({
-                  from: accounts[1],
-                  to: crowdsale.address,
-                  amount: web3.toWei(1, 'ether')
-               })
+				   await web3.eth.sendTransaction({
+	                  from: wallet,
+	                  to: crowdsale.address,
+	                  amount: web3.toWei(1, 'ether')
+	               })
 				} catch(e) {
+					console.log(e)
 				 	return reject() // this is not the case
 				}
 
@@ -150,11 +183,12 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-		it('should reject ico payments before ico start time',()=>{
+		it.only('should reject ico payments before ico start time',()=>{
 			return new Promise(async (resolve,reject)=>{
 				try{
-					await crowdsale.buyICOtokens()
+					await crowdsale.buyICOTokens()
 				}catch(e){
+					console.log(e)
 					return resolve()
 				}
 
@@ -162,12 +196,13 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			})
 		})
 
-		it('should accept payments after ico start time',() => {
+		it.only('should accept payments after ico start time',() => {
 			return new Promise(async (resolve,reject)=>{
 				increaseTimeTo(this.ICOStartTime)
 				try{
-					await crowdsale.buyICOtokens()
+					await crowdsale.buyICOTokens()
 				}catch(e){
+					console.log(e)
 					return reject() // this is not the case
 				}
 				resolve() // there shouldn't be any exception
@@ -178,12 +213,30 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 			return new Promise(async (resolve,reject)=>{
 			    increaseTimeTo(this.ICOEndTime)
 				try{
-					await crowdsale.buyICOtokens()
+					await crowdsale.buyICOTokens()
 				}catch(e){
 					return resolve() // this is the  case to be handled
 				}
 				reject() // there should be any exception
 			})
+		})
+
+		it('should extract funds to wallet', () => {
+			return new Promise(async (resolve,reject) => {
+				increaseTimeTo(this.ICOEndTime)
+		   		await crowdsale.updateState()
+		   		const pre = web3.eth.getBalance(wallet)
+		   		try{
+		   			//do one transaction
+		   			await crowdsale.extractFundsRaised() // add buyICOtoken or presale token then this.balance will be updated and this testcase will be considered as  tested correctly
+		   		}catch(e){
+		   			console.log(e)
+		   			return reject()
+		   		}
+		   		const post = web3.eth.getBalance(wallet)
+		   		assert.notEqual(post,pre, "extractFundsRaised not working fine")
+		   		resolve()
+	   		})
 		})
 	})
 
@@ -211,7 +264,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 		        assert.ok(isPaused, "The contract should be pausable by the owner")
 
 		        try{
-		        	await crowdsale.buyICOtokens()
+		        	await crowdsale.buyICOTokens()
 		        }catch(e){
 		        	return resolve() // payments should not be allowed on pause
 		        }
