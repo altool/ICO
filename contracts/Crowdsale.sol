@@ -54,7 +54,7 @@ contract Crowdsale is Pausable {
    event ICOStarted();
    event ICOFinalized();
 
-   // Only allow the execution of the function before the ICO starts
+   // Only allow the execution of the function before the ICO starts or after the presale
    modifier beforeStarting() {
       require(currentState == States.NotStarted || currentState == States.PresaleEnded);
       _;
@@ -141,7 +141,7 @@ contract Crowdsale is Pausable {
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
       // Send the tokens
-      token.transferFrom(token, msg.sender, tokens);
+      token.transfer(msg.sender, tokens);
    }
 
    /// @notice To buy ICO tokens with the ICO rate
@@ -159,7 +159,7 @@ contract Crowdsale is Pausable {
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
       // Send the tokens
-      token.transferFrom(token, msg.sender, tokens);
+      token.transfer(msg.sender, tokens);
    }
 
    /// @notice To set the rates for the presale and ICO by the owner before starting
