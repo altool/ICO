@@ -126,7 +126,7 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
                // to revert transactions when the ICO is ended. So it's only possible
                // to execute them from the fallback function
 					await web3.eth.sendTransaction({
-                  from: accounts[1],
+                  from: web3.eth.accounts[1],
                   to: crowdsale.address,
                   amount: web3.toWei(1, 'ether')
                })

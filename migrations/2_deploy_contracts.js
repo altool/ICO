@@ -1,5 +1,5 @@
-const Drops = artifacts.require("./Drops.sol");
-const Crowdsale = artifacts.require('./Crowdsale.sol');
+const Drops = artifacts.require("Drops")
+const Crowdsale = artifacts.require('Crowdsale')
 
 module.exports = function(deployer, network) {
    let tokenICOEndDate = String(new Date().getTime()).substring(0, String(new Date().getTime()).length - 3)
@@ -18,9 +18,7 @@ module.exports = function(deployer, network) {
            0,
            0,
            0,
-           0, {
-              from: web3.eth.accounts[0]
-           }
+           0
         )
      })
   }
