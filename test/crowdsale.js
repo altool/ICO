@@ -282,7 +282,86 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
             resolve()
          })
       })
-	})
+
+      it("Should buy the maximum 7.5 million tokens for 1500 ether at rate 5000 at the presale", () => {
+         return new Promise(async (resolve, reject) => {
+            const amountToBuy = web3.toWei(1500, 'ether')
+            const account = web3.eth.accounts[2]
+            const initialTokenBalance = parseFloat(await drops.balanceOf(account))
+            const expectedTokens = 7.5e24
+
+            increaseTimeTo(this.presaleStartTime)
+            await web3.eth.sendTransaction({
+               from: account,
+               to: crowdsale.address,
+               value: amountToBuy,
+               gas: 4e6
+            })
+
+            const tokensRaised = parseFloat(await crowdsale.tokensPresaleRaised())
+            const finalTokenBalance = parseFloat(await drops.balanceOf(account))
+
+            assert.equal(tokensRaised, expectedTokens, 'The tokens raised aren\'t correct')
+            assert.equal(finalTokenBalance, initialTokenBalance + expectedTokens, "The balance is not correct")
+            resolve()
+         })
+      })
+
+      // If you send more than the maximum in the presale, the contract should refund the rest unused
+      it("Should buy more than the maximum and limit the purchase to 7.5 million tokens for 3000 ether at rate 5000 at the presale", () => {
+         return new Promise(async (resolve, reject) => {
+            const amountToBuy = web3.toWei(3000, 'ether')
+            const account = web3.eth.accounts[2]
+            const initialTokenBalance = parseFloat(await drops.balanceOf(account))
+            const expectedTokens = 7.5e24
+
+            increaseTimeTo(this.presaleStartTime)
+            await web3.eth.sendTransaction({
+               from: account,
+               to: crowdsale.address,
+               value: amountToBuy,
+               gas: 4e6
+            })
+
+            const tokensRaised = parseFloat(await crowdsale.tokensPresaleRaised())
+            const finalTokenBalance = parseFloat(await drops.balanceOf(account))
+
+            assert.equal(tokensRaised, expectedTokens, 'The tokens raised aren\'t correct')
+            assert.equal(finalTokenBalance, initialTokenBalance + expectedTokens, "The balance is not correct")
+            resolve()
+         })
+      })
+
+      // If you send more than the maximum in the presale, the contract should refund the rest unused
+      it("Should refund the unused tokens when buying more than the maximum for the presale for 3000 ether at rate 5000 at the presale", () => {
+         return new Promise(async (resolve, reject) => {
+            const amountToBuy = web3.toWei(3000, 'ether')
+            const account = web3.eth.accounts[2]
+            const initialBalance = parseFloat(await web3.eth.getBalance(account))
+            const initialTokenBalance = parseFloat(await drops.balanceOf(account))
+            const expectedTokens = 7.5e24
+            const limitEtherPresale = web3.toWei(1500, 'ether')
+
+            increaseTimeTo(this.presaleStartTime)
+            await web3.eth.sendTransaction({
+               from: account,
+               to: crowdsale.address,
+               value: amountToBuy,
+               gas: 4e6
+            })
+
+            const tokensRaised = parseFloat(await crowdsale.tokensPresaleRaised())
+            const finalBalance = parseFloat(await web3.eth.getBalance(account))
+            const finalTokenBalance = parseFloat(await drops.balanceOf(account))
+
+            assert.equal(tokensRaised, expectedTokens, 'The tokens raised aren\'t correct')
+            assert.equal(finalTokenBalance, initialTokenBalance + expectedTokens, "The token balance is not correct")
+            assert.equal(finalBalance, initialBalance - limitEtherPresale, 'The user balance is not correct')
+            resolve()
+         })
+      })
+
+   })
 
 	describe('Payments paused', () => {
 		it('should not accept payments on pause',() => {

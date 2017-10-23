@@ -131,11 +131,20 @@ contract Crowdsale is Pausable {
       require(validPresalePurchase());
 
       uint256 tokens = msg.value.mul(presaleRate);
-      weiPresaleRaised = weiPresaleRaised.add(msg.value);
-      tokensPresaleRaised = tokensPresaleRaised.add(tokens);
 
-      // Check that we're not exceeding the limits
-      require(tokensPresaleRaised <= limitPresaleContribution);
+      // If we're exceeding the limit, return the exceeding balance and buy with
+      // what you have
+      if(tokensPresaleRaised.add(tokens) > limitPresaleContribution) {
+         uint256 exceedingTokens = tokensPresaleRaised.add(tokens).sub(limitPresaleContribution);
+         uint256 exceedingWei = exceedingTokens.div(presaleRate);
+
+         tokens = tokens.sub(exceedingTokens);
+         tokensPresaleRaised = limitPresaleContribution;
+         msg.sender.transfer(exceedingWei);
+      } else {
+         weiPresaleRaised = weiPresaleRaised.add(msg.value);
+         tokensPresaleRaised = tokensPresaleRaised.add(tokens);
+      }
 
       counterPresaleTransactions = counterPresaleTransactions.add(1);
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
@@ -150,11 +159,20 @@ contract Crowdsale is Pausable {
       require(validICOPurchase());
 
       uint256 tokens = msg.value.mul(ICORate);
-      weiICORaised = weiICORaised.add(msg.value);
-      tokensICORaised = tokensICORaised.add(tokens);
 
-      // Check that we're not exceeding the limits
-      require(tokensICORaised <= limitICOContribution);
+      // If we're exceeding the limit, return the exceeding balance and buy with
+      // what you have
+      if(tokensICORaised.add(tokens) > limitICOContribution) {
+         uint256 exceedingTokens = tokensICORaised.add(tokens).sub(limitICOContribution);
+         uint256 exceedingWei = exceedingTokens.div(ICORate);
+
+         tokens = tokens.sub(exceedingTokens);
+         tokensICORaised = limitICOContribution;
+         msg.sender.transfer(exceedingWei);
+      } else {
+         weiICORaised = weiICORaised.add(msg.value);
+         tokensICORaised = tokensICORaised.add(tokens);
+      }
 
       counterICOTransactions = counterICOTransactions.add(1);
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
@@ -221,16 +239,16 @@ contract Crowdsale is Pausable {
    /// @notice To verify that the purchase of presale tokens is valid
    function validPresalePurchase() internal constant returns(bool) {
       bool withinTime = now >= presaleStartTime && now < presaleEndTime;
-      bool withinLimit = tokensPresaleRaised < limitPresaleContribution;
+      bool atLimit = tokensPresaleRaised < limitPresaleContribution;
 
-      return withinTime && withinLimit;
+      return withinTime && atLimit;
    }
 
    /// @notice To verify that the purchase of ICO tokens is valid
    function validICOPurchase() internal constant returns(bool) {
       bool withinTime = now >= ICOStartTime && now < ICOEndTime;
-      bool withinLimit = tokensICORaised < limitICOContribution;
+      bool atLimit = tokensICORaised < limitICOContribution;
 
-      return withinTime && withinLimit;
+      return withinTime && atLimit;
    }
 }
