@@ -53,7 +53,7 @@ contract ERC20 is ERC20Basic {
 contract BasicToken is ERC20Basic {
   using SafeMath for uint256;
 
-  mapping(address => uint256) balances;
+  mapping(address => uint256) public balances;
 
   /// @dev transfer token for a specified address
   /// @param _to The address to transfer to.

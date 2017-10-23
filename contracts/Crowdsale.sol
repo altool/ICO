@@ -134,6 +134,7 @@ contract Crowdsale is Pausable {
       weiPresaleRaised = weiPresaleRaised.add(msg.value);
       tokensPresaleRaised = tokensPresaleRaised.add(tokens);
 
+      // Check that we're not exceeding the limits
       require(tokensPresaleRaised <= limitPresaleContribution);
 
       counterPresaleTransactions = counterPresaleTransactions.add(1);
@@ -141,7 +142,7 @@ contract Crowdsale is Pausable {
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
       // Send the tokens
-      //token.distributeTokens(msg.sender, tokens);
+      token.distributeTokens(msg.sender, tokens);
    }
 
    /// @notice To buy ICO tokens with the ICO rate
@@ -152,6 +153,7 @@ contract Crowdsale is Pausable {
       weiICORaised = weiICORaised.add(msg.value);
       tokensICORaised = tokensICORaised.add(tokens);
 
+      // Check that we're not exceeding the limits
       require(tokensICORaised <= limitICOContribution);
 
       counterICOTransactions = counterICOTransactions.add(1);
