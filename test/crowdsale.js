@@ -246,8 +246,10 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 		   		await crowdsale.updateState()
 		   		const pre = web3.eth.getBalance(wallet)
 		   		try{
-		   			//do one transaction
-		   			await crowdsale.extractFundsRaised() // add buyICOtoken or presale token then this.balance will be updated and this testcase will be considered as  tested correctly
+
+		   			// Do one transaction add buyICOtoken or presale token then this.balance
+		   			// will be updated and this testcase will be considered as tested correctly
+		   			await crowdsale.extractFundsRaised()
 		   		}catch(e){
 		   			console.log(e)
 		   			return reject()
@@ -257,6 +259,29 @@ contract('Crowdsale', function([tokenAddress, investor, wallet, purchaser]){
 		   		resolve()
 	   		})
 		})
+
+      it("Should buy 5 million tokens for 1000 ether at rate 5000 at the presale", () => {
+         return new Promise(async (resolve, reject) => {
+            const amountToBuy = web3.toWei(1000, 'ether')
+            const initialTokenBalance = parseFloat(await drops.balanceOf(web3.eth.accounts[2]))
+            const expectedTokens = 5e24
+
+            increaseTimeTo(this.presaleStartTime)
+            await web3.eth.sendTransaction({
+               from: web3.eth.accounts[2],
+               to: crowdsale.address,
+               value: amountToBuy,
+               gas: 4e6
+            })
+
+            const tokensRaised = parseFloat(await crowdsale.tokensPresaleRaised())
+            const finalTokenBalance = parseFloat(await drops.balanceOf(web3.eth.accounts[2]))
+
+            assert.equal(tokensRaised, expectedTokens, 'The tokens raised aren\'t correct')
+            assert.equal(finalTokenBalance, initialTokenBalance + expectedTokens, "The balance is not correct")
+            resolve()
+         })
+      })
 	})
 
 	describe('Payments paused', () => {
