@@ -141,7 +141,7 @@ contract Crowdsale is Pausable {
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
 
       // Send the tokens
-      token.distributeTokens(msg.sender, tokens);
+      //token.distributeTokens(msg.sender, tokens);
    }
 
    /// @notice To buy ICO tokens with the ICO rate
