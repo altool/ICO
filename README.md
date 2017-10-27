@@ -1,15 +1,15 @@
 # ICO
-Repository for the Smart Contracts
+Repository for the Smart Contracts: Token, Presale, ICO
 
 There're 2 main contracts:
-- The token contract: which holds all the functionality to transfer and interact with tokens.
-- The Crowdsale contract: which is used to sell tokens on the presale and ICO with different prices that can be set anytime.
+- The token contract: Holds all functionality to transfer and interact with tokens.
+- The Crowdsale contract: Used to sell tokens on the presale and ICO with different prices that can be set anytime.
 
 ## Token Contract
-The token contract it's called `Drops.sol` and is pausable. You can stop transfers and allowances to other users in case you need to change the functionality of the contract or if you find some vulnerability. To use it simply create the contract and give an allowance of 90 million tokens to the Crowdsale contract because we decided that 15 million tokens will be sold on the Presale and 75 million on the ICO.
+The token contract - `Drops.sol` and is pausable. You can stop transfers and allowances to other users in case you need to change the functionality of the contract or if you find some vulnerability. To use it, simply create the contract and give an allowance of 90 million tokens to the Crowdsale contract. We decided 15 million tokens will be sold during the Presale and 75 million during the ICO.
 
 ## ICO Contract
-The ICO contract is called `Crowdsale.sol` and is essentially used to distribute the tokens. To use this contract you have to execute the constructor with the wallet address, the token address, the presale start time, the presale end time, the ICO start time and the ICO end time.
+The ICO contract - `Crowdsale.sol`- Essentially used to distribute the tokens. To use this contract, you have to execute the constructor with the wallet address, the token address, the presale start time, the presale end time, the ICO start time and the ICO end time.
 
 After creating the contract, you'll have to set the rates for the presale token and the ICO contract. Those variables determine how many tokens you'll get per ether. We do it this way to set the price according to the day of the ICO. It must be set before the presale and ICO.
 
