@@ -246,13 +246,11 @@ contract Drops is PausableToken {
 
    uint8 public constant decimals = 18;
 
-   // 150M tokens with 18 decimals maximum
-   uint256 public totalSupply;
+   // 89.5 million tokens with 18 decimals maximum
+   uint256 public totalSupply = 89.5e24;
 
-   uint256 public initialSupply = 67.5e24;
-
-   // The amount of tokens to distribute on the crowsale 7.5M presale + 75M ICO
-   uint256 public constant crowdsaleTokens = 82.5e24;
+   // The amount of tokens to distribute on the crowsale
+   uint256 public constant crowdsaleTokens = 44.5e24;
 
    uint256 public ICOEndTime;
 
@@ -262,7 +260,7 @@ contract Drops is PausableToken {
 
    // Only allow token transfers after the ICO
    modifier afterCrowdsale() {
-      require(now >= ICOEndTime);
+      require(now >= ICOEndTime || tokensRaised >= crowdsaleTokens);
       _;
    }
 
@@ -279,8 +277,7 @@ contract Drops is PausableToken {
    function Drops(uint256 _ICOEndTime) public {
       require(_ICOEndTime > 0);
 
-      balances[msg.sender] = initialSupply;
-      totalSupply = initialSupply;
+      balances[owner] = totalSupply;
       ICOEndTime = _ICOEndTime;
    }
 
@@ -302,8 +299,8 @@ contract Drops is PausableToken {
       require(tokensRaised.add(_amount) <= crowdsaleTokens);
 
       tokensRaised = tokensRaised.add(_amount);
+      balances[owner] = balances[owner].sub(_amount);
       balances[_to] = balances[_to].add(_amount);
-      totalSupply = totalSupply.add(_amount);
    }
 
    /// @notice Override the functions to not allow token transfers until the end of the ICO

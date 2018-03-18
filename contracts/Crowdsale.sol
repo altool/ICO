@@ -11,54 +11,52 @@ contract Crowdsale is Pausable {
    // The possible States of the ICO
    enum States {
       NotStarted,
-      Presale,
-      PresaleEnded,
-      ICO,
-      ICOEnded
+      Round1,
+      Round2,
+      Round3,
+      Round4,
+      Ended
    }
 
    States public currentState = States.NotStarted;
    Drops public token;
-   uint256 public presaleRate;
-   uint256 public ICORate;
-   uint256 public presaleStartTime;
-   uint256 public presaleEndTime;
+
+   // The rates will be set automatically when you execute setRates() with the price per ether sent as a parameter
+   uint256 public round1Rate;
+   uint256 public round2Rate;
+   uint256 public round3Rate;
+   uint256 public round4Rate;
    uint256 public ICOStartTime;
    uint256 public ICOEndTime;
 
-   // How many tokens we want to raise presale
-   uint256 public limitPresaleContribution = 7.5e24;
+   // How many tokens we want to raise
+   uint256 public limitRound1Contribution = 10e24;
+   uint256 public limitRound2Contribution = 20e24;
+   uint256 public limitRound3Contribution = 32e24;
+   uint256 public limitRound4Contribution = 44.5e24;
 
    // How many tokens we want to raise on the ICO
-   uint256 public limitICOContribution = 75e24;
+   uint256 public limitICOContribution = 44.5e24;
    address public wallet;
-   uint256 public weiPresaleRaised;
-   uint256 public tokensPresaleRaised;
-   uint256 public weiICORaised;
-   uint256 public tokensICORaised;
-   uint256 public counterPresaleTransactions;
-   uint256 public counterICOTransactions;
+   uint256 public weiRaised;
+   uint256 public tokensSold;
+   uint256 public numberOfTransactions;
 
-   // How much each user paid for the presale + ICO
+   // How much each user paid
    mapping(address => uint256) public ICOBalances;
 
-   // How many tokens each user got for the presale + ICO
+   // How many tokens each user got
    mapping(address => uint256) public tokenBalances;
 
    // To indicate who purchased what amount of tokens and who received what amount of wei
    event TokenPurchase(address indexed buyer, uint256 value, uint256 amountOfTokens);
 
    // Events
-   event PresaleStarted();
-   event PresaleFinalized();
-   event ICOStarted();
+   event Round1Started();
+   event Round2Started();
+   event Round3Started();
+   event Round4Started();
    event ICOFinalized();
-
-   // Only allow the execution of the function before the ICO starts or after the presale
-   modifier beforeStarting() {
-      require(currentState == States.NotStarted || currentState == States.PresaleEnded);
-      _;
-   }
 
    // Only after the Presale and ICO
    modifier afterStarting() {
@@ -70,10 +68,6 @@ contract Crowdsale is Pausable {
    /// @notice Constructor of the crowsale to set up the main variables and create a token
    /// @param _wallet The wallet address that stores the Wei raised
    /// @param _tokenAddress The token used for the ICO
-   /// @param _presaleStartTime When the presale should start. If it's 0, we'll use
-   /// the default value of the variable set above
-   /// @param _presaleEndTime When the presale should end. If it's 0, we'll use the
-   /// default value of the variable
    /// @param _ICOStartTime When the ICO should start. If it's 0, we'll use
    /// the default value of the variable set above
    /// @param _ICOEndTime When the ICO should end. If it's 0, we'll use the
@@ -81,35 +75,17 @@ contract Crowdsale is Pausable {
    function Crowdsale(
       address _wallet,
       address _tokenAddress,
-      uint256 _presaleStartTime,
-      uint256 _presaleEndTime,
       uint256 _ICOStartTime,
       uint256 _ICOEndTime
    ) public {
       require(_wallet != address(0));
       require(_tokenAddress != address(0));
+      require(_ICOStartTime < _ICOEndTime);
 
-      // If you send the start and end time on the constructor, the end must be larger
-      if(_presaleStartTime > 0 && _presaleEndTime > 0)
-         require(_presaleStartTime < _presaleEndTime);
-
-      if(_ICOStartTime > 0 && _ICOEndTime > 0)
-         require(_ICOStartTime < _ICOEndTime);
-
+      ICOStartTime = _ICOStartTime;
+      ICOEndTime = _ICOEndTime;
       wallet = _wallet;
       token = Drops(_tokenAddress);
-
-      if(_presaleStartTime > 0)
-         presaleStartTime = _presaleStartTime;
-
-      if(_presaleEndTime > 0)
-         presaleEndTime = _presaleEndTime;
-
-      if(_ICOStartTime > 0)
-         ICOStartTime = _ICOStartTime;
-
-      if(_ICOEndTime > 0)
-         ICOEndTime = _ICOEndTime;
    }
 
    /// @notice The fallback function to buy tokens depending on the States of the
@@ -118,136 +94,177 @@ contract Crowdsale is Pausable {
    function () public payable {
       updateState();
 
-      if(currentState == States.Presale)
-         buyPresaleTokens();
-      else if(currentState == States.ICO)
-         buyICOTokens();
-      else
-         revert();
-   }
-
-   /// @notice To buy presale tokens using the presale rate
-   function buyPresaleTokens() internal whenNotPaused {
-      require(validPresalePurchase());
-
-      uint256 tokens = msg.value.mul(presaleRate);
-
-      // If we're exceeding the limit, return the exceeding balance and buy with
-      // what you have
-      if(tokensPresaleRaised.add(tokens) > limitPresaleContribution) {
-         uint256 exceedingTokens = tokensPresaleRaised.add(tokens).sub(limitPresaleContribution);
-         uint256 exceedingWei = exceedingTokens.div(presaleRate);
-
-         tokens = tokens.sub(exceedingTokens);
-         tokensPresaleRaised = limitPresaleContribution;
-         msg.sender.transfer(exceedingWei);
-      } else {
-         weiPresaleRaised = weiPresaleRaised.add(msg.value);
-         tokensPresaleRaised = tokensPresaleRaised.add(tokens);
-      }
-
-      counterPresaleTransactions = counterPresaleTransactions.add(1);
-      ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
-      tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
-
-      // Send the tokens
-      token.distributeTokens(msg.sender, tokens);
+      if(currentState != States.NotStarted && currentState != States.Ended)
+        buyICOTokens();
    }
 
    /// @notice To buy ICO tokens with the ICO rate
    function buyICOTokens() internal whenNotPaused {
       require(validICOPurchase());
 
-      uint256 tokens = msg.value.mul(ICORate);
+      uint256 tokens = 0;
+      uint256 amountPaid = calculateExcessBalance();
 
-      // If we're exceeding the limit, return the exceeding balance and buy with
-      // what you have
-      if(tokensICORaised.add(tokens) > limitICOContribution) {
-         uint256 exceedingTokens = tokensICORaised.add(tokens).sub(limitICOContribution);
-         uint256 exceedingWei = exceedingTokens.div(ICORate);
-
-         tokens = tokens.sub(exceedingTokens);
-         tokensICORaised = limitICOContribution;
-         msg.sender.transfer(exceedingWei);
-      } else {
-         weiICORaised = weiICORaised.add(msg.value);
-         tokensICORaised = tokensICORaised.add(tokens);
+      if(tokensSold < limitRound1Contribution) {
+         // Tier 1
+         tokens = amountPaid.mul(round1Rate);
+         // If the amount of tokens that you want to buy gets out of this tier
+         if(tokensSold.add(tokens) > limitRound1Contribution)
+            tokens = calculateExcessTokens(amountPaid, limitRound1Contribution, 1, round1Rate);
+      } else if(tokensSold >= limitRound1Contribution && tokensSold < limitRound2Contribution) {
+         // Tier 2
+         tokens = amountPaid.mul(round2Rate);
+         if(tokensSold.add(tokens) > limitRound2Contribution)
+            tokens = calculateExcessTokens(amountPaid, limitRound2Contribution, 2, round2Rate);
+      } else if(tokensSold >= limitRound2Contribution && tokensSold < limitRound3Contribution) {
+         // Tier 3
+         tokens = amountPaid.mul(round3Rate);
+         if(tokensSold.add(tokens) > limitRound3Contribution)
+            tokens = calculateExcessTokens(amountPaid, limitRound3Contribution, 3, round3Rate);
+      } else if(tokensSold >= limitRound3Contribution) {
+         // Tier 4
+         tokens = amountPaid.mul(round4Rate);
       }
 
-      counterICOTransactions = counterICOTransactions.add(1);
-      ICOBalances[msg.sender] = ICOBalances[msg.sender].add(msg.value);
-      tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
+      weiRaised = weiRaised.add(amountPaid);
+      tokensSold = tokensSold.add(tokens);
 
-      // Send the tokens
-      token.distributeTokens(msg.sender, tokens);
+      // Keep a record of how many tokens everybody gets in case we need to do refunds
+      tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
+      ICOBalances[msg.sender] = ICOBalances[msg.sender].add(amountPaid);
+      TokenPurchase(msg.sender, amountPaid, tokens);
+      numberOfTransactions = numberOfTransactions.add(1);
+
+      wallet.transfer(amountPaid);
    }
 
    /// @notice To set the rates for the presale and ICO by the owner before starting
-   /// @param _presaleRate The rate of the presale
-   /// @param _ICORate The rate of the ICO
-   function setRates(uint256 _presaleRate, uint256 _ICORate) public onlyOwner beforeStarting {
-      require(_presaleRate > 0 && _ICORate > 0);
+   /// @param _pricePerEtherWithoutDecimals The rate of the presale
+   function setRates(uint256 _pricePerEtherWithoutDecimals) public onlyOwner {
+      require(_pricePerEtherWithoutDecimals > 0);
 
-      presaleRate = _presaleRate;
-      ICORate = _ICORate;
+      round1Rate = _pricePerEtherWithoutDecimals / (4 / 100); // $0.04
+      round2Rate = _pricePerEtherWithoutDecimals / (20 / 100); // $0.20;
+      round3Rate = _pricePerEtherWithoutDecimals / (50 / 100); // $0.50;
+      round4Rate = = _pricePerEtherWithoutDecimals / (80 / 100); // $0.80;
    }
 
    /// @notice Updates the States of the Contract depending on the time and States.
    /// After updating the state, the code it's execute again in case you jump from 2 states
    /// or similar
    function updateState() public {
-      if(currentState == States.ICOEnded) return;
+      if(currentState == States.Ended) return revert();
 
-      if(currentState == States.ICO && now >= ICOEndTime) {
-         currentState = States.ICOEnded;
+      // End the ICO when the time is over or the maximum amount of tokens has been sold
+      if(now >= ICOEndTime || tokensSold >= limitICOContribution) {
+         currentState = States.Ended;
          ICOFinalized();
-         updateState();
-      } else if(currentState == States.PresaleEnded && now >= ICOStartTime) {
-         currentState = States.ICO;
-         ICOStarted();
-         updateState();
-      } else if(currentState == States.Presale && now >= presaleEndTime) {
-         currentState = States.PresaleEnded;
-         PresaleFinalized();
-         updateState();
-      } else if(currentState == States.NotStarted && now >= presaleStartTime) {
-         currentState = States.Presale;
-         PresaleStarted();
-         updateState();
+      } else if(currentState == Round3 && tokensSold >= limitRound3Contribution) {
+         currentState = States.Round4;
+         Round4Started();
+      } else if(currentState == Round2 && tokensSold >= limitRound2Contribution) {
+         currentState = States.Round3;
+         Round3Started();
+      } else if(currentState == Round1 && tokensSold >= limitRound1Contribution) {
+         currentState = States.Round2;
+         Round2Started();
+      } else if(currentState == NotStarted && now >= ICOStartTime) {
+         currentState = States.Round1;
+         Round1Started();
       }
    }
 
-   /// @notice To extract the balance of the contract after the presale and ICO only
-   function extractFundsRaised() public onlyOwner afterStarting whenNotPaused {
-      wallet.transfer(this.balance);
+   /// @notice Calculates how many ether will be used to generate the tokens in
+   /// case the buyer sends more than the maximum balance but has some balance left
+   /// and updates the balance of that buyer.
+   /// For instance if he's 500 balance and he sends 1000, it will return 500
+   /// and refund the other 500 ether
+   function calculateExcessBalance() internal whenNotPaused returns(uint256) {
+      uint256 amountPaid = msg.value;
+      uint256 differenceWei = 0;
+
+      // If we're in the last tier, check that the limit hasn't been reached
+      // and if so, refund the difference and return what will be used to
+      // buy the remaining tokens
+      if(tokensSold >= limitRound3Contribution) {
+         uint256 addedTokens = tokensSold.add(amountPaid.mul(round4Rate));
+         // If tokensSold + what you paid converted to tokens is bigger than the max
+         if(addedTokens > limitICOContribution) {
+            // Refund the difference
+            uint256 difference = addedTokens.sub(limitICOContribution);
+            differenceWei = difference.div(round4Rate);
+            amountPaid = amountPaid.sub(differenceWei);
+            msg.sender.transfer(differenceWei);
+         }
+      }
+
+      return amountPaid;
+   }
+
+   /// @notice Buys the tokens for the specified tier and for the next one
+   /// @param amount The amount of ether paid to buy the tokens
+   /// @param tokensThisTier The limit of tokens of that tier
+   /// @param tierSelected The tier selected
+   /// @param _rate The rate used for that `tierSelected`
+   /// @return uint The total amount of tokens bought combining the tier prices
+   function calculateExcessTokens(
+      uint256 amount,
+      uint256 tokensThisTier,
+      uint256 tierSelected,
+      uint256 _rate
+   ) public returns(uint256 totalTokens) {
+      require(amount > 0 && tokensThisTier > 0 && _rate > 0);
+      require(tierSelected >= 1 && tierSelected <= 4);
+
+      uint weiThisTier = tokensThisTier.sub(tokensSold).div(_rate);
+      uint weiNextTier = amount.sub(weiThisTier);
+      uint tokensNextTier = 0;
+
+      // If there's excessive wei for the last tier, refund those
+      if(tierSelected != 4)
+         tokensNextTier = calculateTokensTier(weiNextTier, tierSelected.add(1));
+      else
+         msg.sender.transfer(weiNextTier);
+
+      totalTokens = tokensThisTier.sub(tokensSold).add(tokensNextTier);
+   }
+
+   function calculateTokensTier(uint256 weiPaid, uint256 tierSelected)
+        internal constant returns(uint256 calculatedTokens)
+   {
+      require(weiPaid > 0);
+      require(tierSelected >= 1 && tierSelected <= 4);
+
+      if(tierSelected == 1)
+         calculatedTokens = weiPaid.mul(round1Rate);
+      else if(tierSelected == 2)
+         calculatedTokens = weiPaid.mul(round2Rate);
+      else if(tierSelected == 3)
+         calculatedTokens = weiPaid.mul(round3Rate);
+      else
+         calculatedTokens = weiPaid.mul(round4Rate);
    }
 
    /// @notice To get the current States as a string
    function getStates() public constant returns(string) {
       if(currentState == States.NotStarted)
          return 'not started';
-      else if(currentState == States.Presale)
-         return 'presale';
-      else if(currentState == States.PresaleEnded)
-         return 'presale ended';
-      else if(currentState == States.ICO)
-         return 'ico';
-      else if(currentState == States.ICOEnded)
+     else if(currentState == States.Round1)
+        return 'round 1';
+      else if(currentState == States.Round2)
+         return 'round 2';
+      else if(currentState == States.Round3)
+         return 'round 3';
+      else if(currentState == States.Round4)
+         return 'round 4';
+      else if(currentState == States.Ended)
          return 'ico ended';
-   }
-
-   /// @notice To verify that the purchase of presale tokens is valid
-   function validPresalePurchase() internal constant returns(bool) {
-      bool withinTime = now >= presaleStartTime && now < presaleEndTime;
-      bool atLimit = tokensPresaleRaised < limitPresaleContribution;
-
-      return withinTime && atLimit;
    }
 
    /// @notice To verify that the purchase of ICO tokens is valid
    function validICOPurchase() internal constant returns(bool) {
       bool withinTime = now >= ICOStartTime && now < ICOEndTime;
-      bool atLimit = tokensICORaised < limitICOContribution;
+      bool atLimit = tokensSold < limitICOContribution;
 
       return withinTime && atLimit;
    }
