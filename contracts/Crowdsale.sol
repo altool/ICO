@@ -1,4 +1,4 @@
-pragma solidity 0.4.15;
+pragma solidity 0.4.21;
 
 // Replace this for the actual code when deploying to the blockchain
 import './Drops.sol';
@@ -38,6 +38,7 @@ contract Crowdsale is Pausable {
    // How many tokens we want to raise on the ICO
    uint256 public limitICOContribution = 44.5e24;
    address public wallet;
+   address public personalWallet;
    uint256 public weiRaised;
    uint256 public tokensSold;
    uint256 public numberOfTransactions;
@@ -58,13 +59,6 @@ contract Crowdsale is Pausable {
    event Round4Started();
    event ICOFinalized();
 
-   // Only after the Presale and ICO
-   modifier afterStarting() {
-      require(now > presaleEndTime);
-      require(currentState == States.PresaleEnded || currentState == States.ICOEnded);
-      _;
-   }
-
    /// @notice Constructor of the crowsale to set up the main variables and create a token
    /// @param _wallet The wallet address that stores the Wei raised
    /// @param _tokenAddress The token used for the ICO
@@ -76,7 +70,8 @@ contract Crowdsale is Pausable {
       address _wallet,
       address _tokenAddress,
       uint256 _ICOStartTime,
-      uint256 _ICOEndTime
+      uint256 _ICOEndTime,
+      address _personalWallet
    ) public {
       require(_wallet != address(0));
       require(_tokenAddress != address(0));
@@ -85,6 +80,7 @@ contract Crowdsale is Pausable {
       ICOStartTime = _ICOStartTime;
       ICOEndTime = _ICOEndTime;
       wallet = _wallet;
+      personalWallet = _personalWallet;
       token = Drops(_tokenAddress);
    }
 
@@ -104,6 +100,7 @@ contract Crowdsale is Pausable {
 
       uint256 tokens = 0;
       uint256 amountPaid = calculateExcessBalance();
+      uint256 weiRaisedBeforeThisPurchase = weiRaised;
 
       if(tokensSold < limitRound1Contribution) {
          // Tier 1
@@ -132,10 +129,20 @@ contract Crowdsale is Pausable {
       // Keep a record of how many tokens everybody gets in case we need to do refunds
       tokenBalances[msg.sender] = tokenBalances[msg.sender].add(tokens);
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(amountPaid);
-      TokenPurchase(msg.sender, amountPaid, tokens);
+      emit TokenPurchase(msg.sender, amountPaid, tokens);
       numberOfTransactions = numberOfTransactions.add(1);
 
-      wallet.transfer(amountPaid);
+      if(weiRaised <= 105 ether){
+          personalWallet.transfer(amountPaid);
+      } else if(weiRaisedBeforeThisPurchase < 105 ether && weiRaised > 105 ether) {
+          uint256 limitWei = (105 ether).sub(weiRaisedBeforeThisPurchase);
+          uint256 exceedingWei = weiRaised.sub(105 ether);
+
+          personalWallet.transfer(limitWei);
+          wallet.transfer(exceedingWei);
+      } else if(weiRaisedBeforeThisPurchase >= 105 ether) {
+          wallet.transfer(amountPaid);
+      }
    }
 
    /// @notice To set the rates for the presale and ICO by the owner before starting
@@ -143,10 +150,10 @@ contract Crowdsale is Pausable {
    function setRates(uint256 _pricePerEtherWithoutDecimals) public onlyOwner {
       require(_pricePerEtherWithoutDecimals > 0);
 
-      round1Rate = _pricePerEtherWithoutDecimals / (4 / 100); // $0.04
-      round2Rate = _pricePerEtherWithoutDecimals / (20 / 100); // $0.20;
-      round3Rate = _pricePerEtherWithoutDecimals / (50 / 100); // $0.50;
-      round4Rate = = _pricePerEtherWithoutDecimals / (80 / 100); // $0.80;
+      round1Rate = _pricePerEtherWithoutDecimals * 100 / 4; // $0.04
+      round2Rate = _pricePerEtherWithoutDecimals * 100 / 20; // $0.20;
+      round3Rate = _pricePerEtherWithoutDecimals * 100 / 50; // $0.50;
+      round4Rate = _pricePerEtherWithoutDecimals * 100 / 80; // $0.80;
    }
 
    /// @notice Updates the States of the Contract depending on the time and States.
@@ -158,19 +165,19 @@ contract Crowdsale is Pausable {
       // End the ICO when the time is over or the maximum amount of tokens has been sold
       if(now >= ICOEndTime || tokensSold >= limitICOContribution) {
          currentState = States.Ended;
-         ICOFinalized();
-      } else if(currentState == Round3 && tokensSold >= limitRound3Contribution) {
+         emit ICOFinalized();
+      } else if(currentState == States.Round3 && tokensSold >= limitRound3Contribution) {
          currentState = States.Round4;
-         Round4Started();
-      } else if(currentState == Round2 && tokensSold >= limitRound2Contribution) {
+         emit Round4Started();
+      } else if(currentState == States.Round2 && tokensSold >= limitRound2Contribution) {
          currentState = States.Round3;
-         Round3Started();
-      } else if(currentState == Round1 && tokensSold >= limitRound1Contribution) {
+         emit Round3Started();
+      } else if(currentState == States.Round1 && tokensSold >= limitRound1Contribution) {
          currentState = States.Round2;
-         Round2Started();
-      } else if(currentState == NotStarted && now >= ICOStartTime) {
+         emit Round2Started();
+      } else if(currentState == States.NotStarted && now >= ICOStartTime) {
          currentState = States.Round1;
-         Round1Started();
+         emit Round1Started();
       }
    }
 
@@ -267,5 +274,9 @@ contract Crowdsale is Pausable {
       bool atLimit = tokensSold < limitICOContribution;
 
       return withinTime && atLimit;
+   }
+
+   function emergencyExtract() external onlyOwner {
+       owner.transfer(this.balance);
    }
 }

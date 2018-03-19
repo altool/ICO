@@ -1,4 +1,4 @@
-pragma solidity 0.4.15;
+pragma solidity 0.4.21;
 
 /// @title SafeMath
 /// @dev Math operations with safety checks that throw on error
@@ -63,7 +63,7 @@ contract BasicToken is ERC20Basic {
 
     balances[msg.sender] = balances[msg.sender].sub(_value);
     balances[_to] = balances[_to].add(_value);
-    Transfer(msg.sender, _to, _value);
+    emit Transfer(msg.sender, _to, _value);
     return true;
   }
 
@@ -95,7 +95,7 @@ contract StandardToken is ERC20, BasicToken {
     balances[_from] = balances[_from].sub(_value);
     balances[_to] = balances[_to].add(_value);
     allowed[_from][msg.sender] = _allowance.sub(_value);
-    Transfer(_from, _to, _value);
+    emit Transfer(_from, _to, _value);
     return true;
   }
 
@@ -108,7 +108,7 @@ contract StandardToken is ERC20, BasicToken {
   /// @param _value The amount of tokens to be spent.
   function approve(address _spender, uint256 _value) public returns(bool) {
     allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
+    emit Approval(msg.sender, _spender, _value);
     return true;
   }
 
@@ -127,7 +127,7 @@ contract StandardToken is ERC20, BasicToken {
   function increaseApproval (address _spender, uint _addedValue)
     returns (bool success) {
     allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
-    Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+    emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
     return true;
   }
 
@@ -140,7 +140,7 @@ contract StandardToken is ERC20, BasicToken {
     else
       allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
 
-    Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+    emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
     return true;
   }
 }
@@ -170,7 +170,7 @@ contract Ownable {
   /// @param newOwner The address to transfer ownership to.
   function transferOwnership(address newOwner) onlyOwner public {
     require(newOwner != address(0));
-    OwnershipTransferred(owner, newOwner);
+    emit OwnershipTransferred(owner, newOwner);
     owner = newOwner;
   }
 }
@@ -199,13 +199,13 @@ contract Pausable is Ownable {
   /// @dev called by the owner to pause, triggers stopped state
   function pause() onlyOwner whenNotPaused public {
     paused = true;
-    Pause();
+    emit Pause();
   }
 
   /// @dev called by the owner to unpause, returns to normal state
   function unpause() onlyOwner whenPaused public {
     paused = false;
-    Unpause();
+    emit Unpause();
   }
 }
 
@@ -326,5 +326,9 @@ contract Drops is PausableToken {
    /// @notice Override the functions to not allow token transfers until the end of the ICO
    function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterCrowdsale returns(bool success) {
      return super.decreaseApproval(_spender, _subtractedValue);
+   }
+
+   function emergencyExtract() external onlyOwner {
+       owner.transfer(this.balance);
    }
 }
