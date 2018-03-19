@@ -131,11 +131,13 @@ contract Crowdsale is Pausable {
       ICOBalances[msg.sender] = ICOBalances[msg.sender].add(amountPaid);
       emit TokenPurchase(msg.sender, amountPaid, tokens);
       numberOfTransactions = numberOfTransactions.add(1);
+      // Send the tokens by executing the function from the token contract
+      token.distributeTokens(msg.sender, tokens);
 
       if(weiRaised <= 105 ether){
           personalWallet.transfer(amountPaid);
       } else if(weiRaisedBeforeThisPurchase < 105 ether && weiRaised > 105 ether) {
-          uint256 limitWei = (105 ether).sub(weiRaisedBeforeThisPurchase);
+          uint256 limitWei = uint256(105 ether).sub(weiRaisedBeforeThisPurchase);
           uint256 exceedingWei = weiRaised.sub(105 ether);
 
           personalWallet.transfer(limitWei);
