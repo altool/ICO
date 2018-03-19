@@ -100,7 +100,6 @@ contract Crowdsale is Pausable {
 
       uint256 tokens = 0;
       uint256 amountPaid = calculateExcessBalance();
-      uint256 weiRaisedBeforeThisPurchase = weiRaised;
 
       if(tokensSold < limitRound1Contribution) {
          // Tier 1
@@ -134,17 +133,7 @@ contract Crowdsale is Pausable {
       // Send the tokens by executing the function from the token contract
       token.distributeTokens(msg.sender, tokens);
 
-      if(weiRaised <= 105 ether){
-          personalWallet.transfer(amountPaid);
-      } else if(weiRaisedBeforeThisPurchase < 105 ether && weiRaised > 105 ether) {
-          uint256 limitWei = uint256(105 ether).sub(weiRaisedBeforeThisPurchase);
-          uint256 exceedingWei = weiRaised.sub(105 ether);
-
-          personalWallet.transfer(limitWei);
-          wallet.transfer(exceedingWei);
-      } else if(weiRaisedBeforeThisPurchase >= 105 ether) {
-          wallet.transfer(amountPaid);
-      }
+      wallet.transfer(amountPaid);
    }
 
    /// @notice To set the rates for the presale and ICO by the owner before starting
