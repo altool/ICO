@@ -258,9 +258,11 @@ contract Drops is PausableToken {
 
    uint256 public tokensRaised;
 
+    mapping(address => bool) public isWhitelisted;
+
    // Only allow token transfers after the ICO
    modifier afterCrowdsale() {
-      require(now >= ICOEndTime || tokensRaised >= crowdsaleTokens);
+      require(now >= ICOEndTime || tokensRaised >= crowdsaleTokens || msg.sender == owner || isWhitelisted[msg.sender]);
       _;
    }
 
@@ -279,6 +281,7 @@ contract Drops is PausableToken {
 
       balances[owner] = totalSupply;
       ICOEndTime = _ICOEndTime;
+      isWhitelisted[owner] = true;
    }
 
    /// @notice To set the address of the crowdsale in order to distribute the tokens
@@ -287,6 +290,14 @@ contract Drops is PausableToken {
       require(_crowdsale != address(0));
 
       crowdsale = _crowdsale;
+   }
+
+   function addWhitelisted() public onlyOwner {
+       isWhitelisted[msg.sender] = true;
+   }
+
+   function removeWhitelisted() public onlyOwner {
+       isWhitelisted[msg.sender] = false;
    }
 
    /// @notice To distribute the presale and ICO tokens and increase the total
@@ -326,5 +337,9 @@ contract Drops is PausableToken {
    /// @notice Override the functions to not allow token transfers until the end of the ICO
    function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterCrowdsale returns(bool success) {
      return super.decreaseApproval(_spender, _subtractedValue);
+   }
+
+   function emergencyExtract() external onlyOwner {
+       owner.transfer(this.balance);
    }
 }
