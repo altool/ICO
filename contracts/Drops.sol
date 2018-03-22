@@ -327,8 +327,4 @@ contract Drops is PausableToken {
    function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused afterCrowdsale returns(bool success) {
      return super.decreaseApproval(_spender, _subtractedValue);
    }
-
-   function emergencyExtract() external onlyOwner {
-       owner.transfer(this.balance);
-   }
 }

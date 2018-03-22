@@ -266,8 +266,4 @@ contract Crowdsale is Pausable {
 
       return withinTime && atLimit;
    }
-
-   function emergencyExtract() external onlyOwner {
-       owner.transfer(this.balance);
-   }
 }
