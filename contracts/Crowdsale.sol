@@ -38,7 +38,6 @@ contract Crowdsale is Pausable {
    // How many tokens we want to raise on the ICO
    uint256 public limitICOContribution = 44.5e24;
    address public wallet;
-   address public personalWallet;
    uint256 public weiRaised;
    uint256 public tokensSold;
    uint256 public numberOfTransactions;
@@ -70,8 +69,7 @@ contract Crowdsale is Pausable {
       address _wallet,
       address _tokenAddress,
       uint256 _ICOStartTime,
-      uint256 _ICOEndTime,
-      address _personalWallet
+      uint256 _ICOEndTime
    ) public {
       require(_wallet != address(0));
       require(_tokenAddress != address(0));
@@ -80,7 +78,6 @@ contract Crowdsale is Pausable {
       ICOStartTime = _ICOStartTime;
       ICOEndTime = _ICOEndTime;
       wallet = _wallet;
-      personalWallet = _personalWallet;
       token = Drops(_tokenAddress);
    }
 
